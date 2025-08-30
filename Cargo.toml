@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 opencl3 = "0.12"
+clap = { version = "4.0", features = ["derive"] }
+libc = "0.2"
