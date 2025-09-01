@@ -203,11 +203,11 @@ impl OpenCLContext {
         Ok(OpenCLContext { context, queue })
     }
 
-    fn alloc_gpu_memory<T>(
-        &self,
+    fn alloc_gpu_memory<'a, T>(
+        & 'a self,
         element_count: usize,
         mmap: bool,
-    ) -> Result<OpenCLBuf<T>, Box<dyn std::error::Error>> {
+    ) -> Result<OpenCLBuf<'a, T>, Box<dyn std::error::Error>> {
         let mut mapped_ptr = ptr::null_mut();
         let mut buf = unsafe {
             Buffer::<T>::create(
@@ -376,6 +376,7 @@ fn run_memset(
             let memset_start = Instant::now();
             // Perform memset in chunks on mapped memory
             chunked_memset(buffer.mapped_ptr as *mut u8, 0x42, size_bytes, chunk_bytes);
+            cl_ctx.queue.finish()?;
             memset_start.elapsed()
         } else {
             // Memset using write buffer operations
@@ -398,6 +399,7 @@ fn run_memset(
                 }
                 offset += current_chunk;
             }
+            cl_ctx.queue.finish()?;
             memset_start.elapsed()
         }
     };
@@ -509,6 +511,7 @@ fn run_memcpy(
                 }
                 offset += current_chunk;
             }
+            cl_ctx.queue.finish()?;
             memcpy_elapsed = memcpy_start.elapsed();
         } else if host_to_gpu {
             // Host to GPU memcpy
@@ -544,6 +547,7 @@ fn run_memcpy(
                 }
                 offset += current_chunk;
             }
+            cl_ctx.queue.finish()?;
             memcpy_elapsed = memcpy_start.elapsed();
         } else if gpu_to_host {
             let mut gpu_buffer = cl_ctx.alloc_gpu_memory::<u8>(size_bytes, use_mmap)?;
@@ -577,6 +581,7 @@ fn run_memcpy(
                 }
                 offset += current_chunk;
             }
+            cl_ctx.queue.finish()?;
             memcpy_elapsed = memcpy_start.elapsed();
         }
     }
